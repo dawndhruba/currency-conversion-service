@@ -9,13 +9,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
 
 @RestController
 public class CurrencyConversionController {
 	
 	@Autowired
 	private Environment environment;
+	
+	@Autowired
+	private CurrencyExchangeProxy currencyExchangeProxy;
 	
 	@GetMapping(path = "/currency-conversion/from/{fromCurrency}/to/{toCurrency}/quantity/{quantity}")
 	public ResponseEntity<CurrencyConversion> convertCurrency(@PathVariable String fromCurrency,@PathVariable String toCurrency,@PathVariable BigDecimal quantity) {
@@ -25,7 +27,10 @@ public class CurrencyConversionController {
 		conversion.setQuantity(quantity);
 		conversion.setEnvironment(environment.getProperty("local.server.port"));
 		
-		ResponseEntity<CurrencyExchange> rsp = new RestTemplate().getForEntity("http://localhost:8000/currency-exchange/from/{fromCurrency}/to/{toCurrency}", CurrencyExchange.class, fromCurrency, toCurrency);
+		// REST template
+		//ResponseEntity<CurrencyExchange> rsp = new RestTemplate().getForEntity("http://localhost:8000/currency-exchange/from/{fromCurrency}/to/{toCurrency}", CurrencyExchange.class, fromCurrency, toCurrency);
+		ResponseEntity<CurrencyExchange> rsp = currencyExchangeProxy.getExchangeRate(fromCurrency, toCurrency);
+		
 		conversion.setConversionMultiple(rsp.getBody().getConversionMultiple());
 		conversion.setTotalCalculatedAmount(quantity.multiply(rsp.getBody().getConversionMultiple()));
 		
